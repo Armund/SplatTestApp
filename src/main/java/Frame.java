@@ -3,6 +3,10 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 
 public class Frame extends JFrame implements ActionListener {
     TextSearcher textSearcher = new TextSearcher();
@@ -19,6 +23,8 @@ public class Frame extends JFrame implements ActionListener {
     JTextArea textAreaFileContent = new JTextArea("Нашлось", 20, 50);
     JLabel labelPath = new JLabel(textSearcher.directoryPath);
     JLabel labelExtension = new JLabel("  .log");
+
+    JTabbedPane tabbedPaneFilesContent = new JTabbedPane();
 
 
     public void actionPerformed(ActionEvent e) {
@@ -42,8 +48,21 @@ public class Frame extends JFrame implements ActionListener {
             textSearcher.setExtension(extension);
             labelExtension.setText(" " + extension);
         } else if (choice == buttonSearch) {
+            textSearcher.clearFiles();
             textSearcher.searchText(textAreaToSearch.getText());
+            textAreaFilesFound.setText("");
             textAreaFilesFound.insert(textSearcher.filesToString(), 0);
+            for (File file : textSearcher.files) {
+                String content = null;
+                try {
+                    content = new String(Files.readAllBytes(Paths.get(file.getPath())), StandardCharsets.UTF_8);
+                } catch (IOException ex) {
+                    ex.printStackTrace();
+                }
+                JTextArea jTextArea = new JTextArea(content, 20, 50);
+                jTextArea.setLineWrap(true);
+                tabbedPaneFilesContent.addTab(file.getPath(), jTextArea); //TODO сделать в JScrollPane
+            }
         }
     }
 
@@ -95,7 +114,8 @@ public class Frame extends JFrame implements ActionListener {
         constraints.gridy = 1;
         constraints.gridwidth = 10;
         constraints.gridheight = 20;
-        jPanel.add(textAreaFileContent, constraints);
+        jPanel.add(tabbedPaneFilesContent, constraints);
+        //jPanel.add(textAreaFileContent, constraints);
 
         buttonChooseFolder.addActionListener(this);
         buttonSetExpansion.addActionListener(this);
