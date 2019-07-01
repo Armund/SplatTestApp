@@ -10,6 +10,7 @@ public class TextSearcher {
     public String extension = ".log";
     public String textToSearch;
     ArrayList<File> files = new ArrayList();
+    ArrayList<ArrayList<Integer>> entranceIndexes = new ArrayList();
 
 
     public void setPath(String path) {
@@ -42,12 +43,23 @@ public class TextSearcher {
         } catch (IOException ex) {
             ex.printStackTrace();
         }
-        if (content.contains(textToSearch)) {
-            System.out.println(content);
-            return true;
-        } else {
-            return false;
+
+        boolean contains = false;
+        int currentPosition = 0;
+        while (currentPosition != -1) {
+            currentPosition = content.indexOf(textToSearch, currentPosition);
+
+            if (currentPosition != -1) {
+                if (!contains) {
+                    contains = true;
+                    entranceIndexes.add(new ArrayList<>());
+                }
+                entranceIndexes.get(entranceIndexes.size() - 1).add(currentPosition);
+
+                currentPosition++;
+            }
         }
+        return contains;
     }
 
 
@@ -56,7 +68,7 @@ public class TextSearcher {
         textToSearch = textToSearch.replace("\n", "\r\n");
         System.out.println(textToSearch);
         File folder = new File(directoryPath);
-        files.clear();
+        //files.clear();
         processFilesFromFolder(folder);
 //        String content = null;
 //        for (File file : files) {
@@ -73,6 +85,7 @@ public class TextSearcher {
 
     public void clearFiles() {
         files.clear();
+        entranceIndexes.clear();
     }
 
     public String filesToString() {

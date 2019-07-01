@@ -1,4 +1,6 @@
 import javax.swing.*;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -23,8 +25,13 @@ public class Frame extends JFrame implements ActionListener {
     JTextArea textAreaFileContent = new JTextArea("Нашлось", 20, 50);
     JLabel labelPath = new JLabel(textSearcher.directoryPath);
     JLabel labelExtension = new JLabel("  .log");
+    JLabel labelSelectionInfo = new JLabel("");
+
 
     JTabbedPane tabbedPaneFilesContent = new JTabbedPane();
+
+    int currentTab; // TODO переместить куда нибудь
+    int currentEntrance = 0; // TODO поменять: при закрытии вкладки сбрасывается переменная
 
 
     public void actionPerformed(ActionEvent e) {
@@ -48,10 +55,13 @@ public class Frame extends JFrame implements ActionListener {
             textSearcher.setExtension(extension);
             labelExtension.setText(" " + extension);
         } else if (choice == buttonSearch) {
+            tabbedPaneFilesContent.removeAll();
             textSearcher.clearFiles();
             textSearcher.searchText(textAreaToSearch.getText());
             textAreaFilesFound.setText("");
             textAreaFilesFound.insert(textSearcher.filesToString(), 0);
+
+
             for (File file : textSearcher.files) {
                 String content = null;
                 try {
@@ -59,12 +69,43 @@ public class Frame extends JFrame implements ActionListener {
                 } catch (IOException ex) {
                     ex.printStackTrace();
                 }
+                JPanel jPanel = new JPanel();
                 JTextArea jTextArea = new JTextArea(content, 20, 50);
                 jTextArea.setLineWrap(true);
-                tabbedPaneFilesContent.addTab(file.getPath(), jTextArea); //TODO сделать в JScrollPane
+                JScrollPane scroll = new JScrollPane(jTextArea);
+                jPanel.add(scroll);
+                tabbedPaneFilesContent.addTab(file.getName(), jPanel);
+            }
+        } else if (choice == buttonNext) {
+            if (labelSelectionInfo.getText().equals(""))
+                getSelection();
+            else if (currentEntrance < textSearcher.entranceIndexes.get(currentTab).size() - 1) {
+                currentEntrance++;
+                getSelection();
+            }
+        } else if (choice == buttonPrevious) {
+            if (labelSelectionInfo.getText().equals(""))
+                getSelection();
+            else if (currentEntrance > 0) {
+                currentEntrance--;
+                getSelection();
             }
         }
     }
+
+    public void getSelection() {
+        labelSelectionInfo.setText(currentEntrance + 1 + " of " + textSearcher.entranceIndexes.get(currentTab).size());
+        // TODO сделать не кривую логику
+        int entranceStart = textSearcher.entranceIndexes.get(currentTab).get(currentEntrance);
+        JPanel jPanelBuffer = (JPanel) tabbedPaneFilesContent.getSelectedComponent();
+
+        JScrollPane jScrollPane = (JScrollPane) jPanelBuffer.getComponent(0);
+        JViewport jViewport = (JViewport) jScrollPane.getComponent(0);
+        JTextArea jTextArea = (JTextArea) jViewport.getComponent(0);
+        jTextArea.grabFocus();
+        jTextArea.select(entranceStart, entranceStart + textSearcher.textToSearch.length());
+    }
+
 
     public Frame() {
         //super("SPLAT test app");
@@ -110,6 +151,8 @@ public class Frame extends JFrame implements ActionListener {
         jPanel.add(buttonPrevious, constraints);
         constraints.gridx = 3;
         jPanel.add(buttonNext, constraints);
+        constraints.gridx = 4;
+        jPanel.add(labelSelectionInfo, constraints);
         constraints.gridx = 2;
         constraints.gridy = 1;
         constraints.gridwidth = 10;
@@ -122,6 +165,14 @@ public class Frame extends JFrame implements ActionListener {
         buttonSearch.addActionListener(this);
         buttonPrevious.addActionListener(this);
         buttonNext.addActionListener(this);
+        tabbedPaneFilesContent.addChangeListener(new ChangeListener() {
+            public void stateChanged(ChangeEvent e) {
+                currentTab = tabbedPaneFilesContent.getSelectedIndex();
+                currentEntrance = 0;
+                labelSelectionInfo.setText("");
+                //System.out.println("Tab: " + tabbedPaneFilesContent.getSelectedIndex());
+            }
+        });
 
 
         jPanel.revalidate();
